@@ -1,0 +1,66 @@
+# KDE Connect integration for Noctalia v5.
+# Port of the legacy v4 QML plugin by WerWolv (GPLv2) to the Luau plugin system.
+#
+# Entries:
+#   * service  — polls kdeconnectd over D-Bus (busctl) and publishes a snapshot
+#   * widget   — bar pill: state glyph + battery % of the main device
+#   * shortcut — control-center tile
+#   * panel    — device panel: stats, pairing, and actions
+
+id           = "antik/kde-connect"
+name         = "KDE Connect"
+version      = "2.0.0"
+min_noctalia = "5.0.0"
+author       = "antik"
+license      = "GPL-2.0"
+icon         = "device-mobile"
+description  = "Integrates your mobile devices into a panel using KDE Connect: battery, network, notifications, pairing, ring, ping, file sharing and browsing."
+tags         = ["Bar", "Panel", "Utility", "System"]
+dependencies = ["kdeconnect (kdeconnectd running)", "systemd (busctl)", "sshfs (optional, browse files)"]
+
+# ── Plugin-level settings (shared by service / widget / panel) ────────────────
+
+[[setting]]
+key             = "poll_interval"
+type            = "int"
+label           = "Poll interval (seconds)"
+description     = "How often the KDE Connect daemon is polled for device status."
+default         = 5
+min             = 2
+max             = 60
+
+# ── Background service: talks to kdeconnectd, feeds the UI entries ───────────
+
+[[service]]
+id    = "monitor"
+entry = "service.luau"
+
+# ── Bar widget ────────────────────────────────────────────────────────────────
+
+[[widget]]
+id    = "kdeconnect"
+entry = "widget.luau"
+
+  [[widget.setting]]
+  key             = "hide_if_no_device"
+  type            = "bool"
+  label           = "Hide if unavailable"
+  description     = "Hide the bar widget entirely when no device is reachable."
+  default         = false
+
+# ── Control-center tile ───────────────────────────────────────────────────────
+
+[[shortcut]]
+id    = "tile"
+entry = "shortcut.luau"
+
+# ── Device panel ──────────────────────────────────────────────────────────────
+
+[[panel]]
+id              = "panel"
+entry           = "panel.luau"
+width           = 440
+height          = 520
+placement       = "attached"
+position        = "auto"
+open_near_click = true
