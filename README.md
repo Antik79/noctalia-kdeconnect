@@ -22,6 +22,11 @@ A Noctalia v5 (Luau) port of the legacy v4 QML plugin by WerWolv, integrating yo
 - `busctl` (part of systemd)
 - `sshfs` + `libfuse` for the "Browse files" action (optional)
 
+## Install (Plugin Source - recommended)
+
+Add https://github.com/Antik79/noctalia-plugins as a plugin source in Noctalia v5 settings.
+Then enable it under **Settings → Plugins** (the local directory is discovered as a built-in source), add the bar widget from the Add-widget picker, and add the shortcut from the control-center shortcut settings.
+
 ## Install (local development)
 
 ```sh
