@@ -2,6 +2,8 @@
 
 A Noctalia v5 (Luau) port of the legacy v4 QML plugin by WerWolv, integrating your mobile devices into a panel using KDE Connect.
 
+<img width="430" height="504" alt="image" src="https://github.com/user-attachments/assets/207e0ba8-43d0-432f-b291-d29f89027cbb" />
+
 ## Features
 
 - Support for multiple devices, with a persisted "main device" selector
