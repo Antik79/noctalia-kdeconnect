@@ -21,18 +21,22 @@
 -- repeated identical requests still fire the watcher):
 --   "kdec.refresh"  { nonce }                       -- force rediscovery + repoll
 --   "kdec.setMain"  { id, nonce }                   -- change + persist main device
---   "kdec.action"   { op = "ring"|"ping", id?, nonce } -- fire a device action
---                                                    (id defaults to mainId)
+--   "kdec.action"   { op = "ring"|"ping"|"clipboard"|"refresh", nonce,
+--                     id? = deviceId, text? = clipboardText }
+--                   -- fire a device action; id defaults to the main device
 
 local MAIN_ID_FILE = "main_device.txt"
 local BUSCTL = "busctl --user"
 local SERVICE = "org.kde.kdeconnect"
+local CALL_TIMEOUT = 5 -- busctl method-call reply timeout (s)
+local PROC_TIMEOUT = 8 -- hard subprocess bound; -k 2 = SIGKILL 2s after SIGTERM
 
 local pollMs = math.max(2, tonumber(noctalia.getConfig("poll_interval")) or 5) * 1000
 local hasBusctl = noctalia.commandExists("busctl")
 local mainId = ""
 local polling = false
 local pollStartedAt = 0 -- os.time() when the current poll began (watchdog anchor)
+local pollGen = 0 -- bumped every poll() call; stale async callbacks compare and no-op
 local announced = false -- forceOnNetworkChange sent since the daemon came up
 local emptyPolls = 0 -- consecutive polls with zero devices (drives re-announce)
 
@@ -55,12 +59,37 @@ local function devicePath(id: string): string
   return "/modules/kdeconnect/devices/" .. sanitizeId(id)
 end
 
+local function shellQuote(s): string
+  return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+end
+
 local function callCmd(objPath: string, itf: string, member: string, args: string?): string
-  local cmd = `{BUSCTL} call --json=short {SERVICE} {objPath} {itf} {member}`
+  local cmd = `timeout -k 2 {PROC_TIMEOUT} {BUSCTL} call --timeout={CALL_TIMEOUT} --json=short {SERVICE} {objPath} {itf} {member}`
   if args then
     cmd ..= " " .. args
   end
   return cmd
+end
+
+-- Runs a device action (ring / ping / clipboard) fire-and-forget. `id` must
+-- pass through sanitizeId before it ever reaches a shell command or D-Bus
+-- object path; empty ids are a no-op.
+local function runDeviceAction(op: string, id: string, text: string?)
+  local sid = sanitizeId(id)
+  if sid == "" then
+    return
+  end
+  if op == "ring" then
+    noctalia.runAsync(callCmd(devicePath(sid) .. "/findmyphone", "org.kde.kdeconnect.device.findmyphone", "ring") .. " >/dev/null 2>&1")
+  elseif op == "ping" then
+    noctalia.runAsync(callCmd(devicePath(sid) .. "/ping", "org.kde.kdeconnect.device.ping", "sendPing") .. " >/dev/null 2>&1")
+  elseif op == "clipboard" then
+    if type(text) == "string" and text ~= "" then
+      noctalia.runAsync(
+        callCmd(devicePath(sid) .. "/share", "org.kde.kdeconnect.device.share", "shareText", "s " .. shellQuote(text)) .. " >/dev/null 2>&1"
+      )
+    end
+  end
 end
 
 -- busctl --json=short wraps results as {"type":"...","data":[ret1, ret2, …]}.
@@ -209,8 +238,12 @@ end
 -- ── polling ───────────────────────────────────────────────────────────────────
 
 local function poll()
+  local now = os.time()
   if polling then
-    return
+    if now - pollStartedAt < math.max(15, 3 * pollMs / 1000) then
+      return
+    end
+    noctalia.log(`kde-connect: poll stuck for {now - pollStartedAt}s; abandoning it`)
   end
 
   if not hasBusctl then
@@ -222,8 +255,14 @@ local function poll()
   end
 
   polling = true
+  pollStartedAt = now
+  pollGen += 1
+  local gen = pollGen
 
-  noctalia.runAsync(`{BUSCTL} status {SERVICE} >/dev/null 2>&1`, function(status)
+  noctalia.runAsync(`timeout -k 2 {PROC_TIMEOUT} {BUSCTL} status {SERVICE} >/dev/null 2>&1`, function(status)
+    if gen ~= pollGen then
+      return
+    end
     if status.exitCode ~= 0 then
       polling = false
       announced = false
@@ -239,6 +278,9 @@ local function poll()
     end
 
     noctalia.runAsync(callCmd("/modules/kdeconnect", "org.kde.kdeconnect.daemon", "devices"), function(listRes)
+      if gen ~= pollGen then
+        return
+      end
       local ids = firstReturn(listRes.stdout)
       if type(ids) ~= "table" or #ids == 0 then
         if listRes.exitCode ~= 0 then
@@ -256,6 +298,9 @@ local function poll()
       for _, rawId in ipairs(ids) do
         local id = sanitizeId(rawId)
         noctalia.runAsync(collectorCmd(id), function(devRes)
+          if gen ~= pollGen then
+            return
+          end
           table.insert(devices, parseDevice(id, devRes.stdout or ""))
           pending -= 1
           if pending == 0 then
@@ -283,6 +328,20 @@ noctalia.state.watch("kdec.setMain", function(req)
   end
 end)
 
+noctalia.state.watch("kdec.action", function(req)
+  if type(req) ~= "table" or type(req.op) ~= "string" then
+    return
+  end
+  if req.op == "refresh" then
+    announced = false
+    poll()
+    return
+  end
+  local snap = noctalia.state.get("kdec")
+  local id = if type(req.id) == "string" and req.id ~= "" then req.id else (type(snap) == "table" and tostring(snap.mainId or "")) or ""
+  runDeviceAction(req.op, id, req.text)
+end)
+
 -- ── IPC: `noctalia msg plugin antik/kde-connect:monitor all <event>` ─────────
 
 function onIpc(event, _payload)
@@ -291,10 +350,8 @@ function onIpc(event, _payload)
   if id == "" then
     return
   end
-  if event == "ring" then
-    noctalia.runAsync(callCmd(devicePath(id) .. "/findmyphone", "org.kde.kdeconnect.device.findmyphone", "ring") .. " >/dev/null 2>&1")
-  elseif event == "ping" then
-    noctalia.runAsync(callCmd(devicePath(id) .. "/ping", "org.kde.kdeconnect.device.ping", "sendPing") .. " >/dev/null 2>&1")
+  if event == "ring" or event == "ping" then
+    runDeviceAction(event, id)
   elseif event == "refresh" then
     announced = false
     poll()

@@ -2,11 +2,20 @@
 -- KDE Connect [[widget]] entry — bar pill.
 --
 -- Shows a state glyph plus the main device's battery percentage.
---   left click:  toggle the device panel
---   right click: ring the main device (find my phone)
+--   left click:   toggle the device panel
+--   right click:  configurable action (setting "right_click_action")
+--   middle click: configurable action (setting "middle_click_action")
 --
--- All data comes from the service's "kdec" state snapshot; this script never
--- talks to D-Bus for status itself.
+-- The configurable actions are: none, open panel, ring, ping, send
+-- clipboard, refresh devices. "panel" is handled directly in this VM (so it
+-- will pick up the click anchor for open_near_click once Noctalia forwards
+-- it for plugin widgets — see docs/upstream-issue-open-near-click.md); every
+-- other action is dispatched to the service via the nonce-wrapped
+-- "kdec.action" state key, since busctl calls for actions belong in the
+-- service/panel, not the widget.
+--
+-- All status data comes from the service's "kdec" state snapshot; this
+-- script never polls D-Bus for status itself.
 
 local PANEL_ID = "antik/kde-connect:panel"
 
@@ -141,12 +150,34 @@ function onClick()
   noctalia.togglePanel(PANEL_ID)
 end
 
-function onRightClick()
-  if type(snap) ~= "table" or snap.mainId == nil or snap.mainId == "" then
+local nonce = 0
+
+local function runAction(action)
+  if action == "" or action == "none" then
     return
   end
-  local id = tostring(snap.mainId):gsub("[^%w_%-]", "")
-  noctalia.runAsync(
-    `busctl --user call org.kde.kdeconnect /modules/kdeconnect/devices/{id}/findmyphone org.kde.kdeconnect.device.findmyphone ring >/dev/null 2>&1`
-  )
+  if action == "panel" then
+    -- Kept in this VM so the toggle can pick up the click anchor once
+    -- Noctalia forwards it for plugin widgets (upstream limitation today).
+    noctalia.togglePanel(PANEL_ID)
+    return
+  end
+  nonce += 1
+  local req = { op = action, nonce = nonce }
+  if action == "clipboard" then
+    local text = noctalia.clipboardText()
+    if text == nil or text == "" then
+      return
+    end
+    req.text = text
+  end
+  noctalia.state.set("kdec.action", req)
+end
+
+function onRightClick()
+  runAction(tostring(barWidget.getConfig("right_click_action") or "none"))
+end
+
+function onMiddleClick()
+  runAction(tostring(barWidget.getConfig("middle_click_action") or "none"))
 end

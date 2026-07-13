@@ -8,7 +8,8 @@ A Noctalia v5 (Luau) port of the legacy v4 QML plugin by WerWolv, integrating yo
 
 - Support for multiple devices, with a persisted "main device" selector
 - Bar widget: connection-state glyph + battery percentage of the main device
-  - Left click opens the device panel, right click rings the device
+  - Left click opens the device panel
+  - Right-click and middle-click actions are configurable per-widget: None, Open panel, Find device (ring), Ping, Send clipboard, Refresh devices (default None for both)
   - Optional "hide when no device is reachable"
 - Control-center shortcut tile showing device name, battery, and connection state
 - Device panel:
@@ -17,6 +18,7 @@ A Noctalia v5 (Luau) port of the legacy v4 QML plugin by WerWolv, integrating yo
   - Send a file (type or paste a path), browse device files over SFTP
   - Pair (with verification key) / unpair
   - Clear error states when `busctl` is missing or `kdeconnectd` is not running
+  - Note: `open_near_click` is declared in the manifest but has no effect yet — as of Noctalia v5.0.0-beta2, panel toggles from Luau plugins (bar widget, control-center tile, or CLI) never carry the click position, so the panel always opens at the default attached position. Upstream limitation; the setting will start working once Noctalia routes plugin-widget panel toggles through its anchored path.
 
 ## Requirements
 

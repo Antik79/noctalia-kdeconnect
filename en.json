@@ -38,8 +38,10 @@
     "share_placeholder": "~/path/to/file",
     "share_not_found": "File not found: {path}",
     "share_sent": "Sent {path}",
+    "share_sent_multi": "Sent {count} files",
     "clipboard_empty": "Clipboard is empty",
     "clipboard_sent": "Clipboard sent to device",
+    "clipboard_too_large": "Clipboard is too large to send",
     "browse_failed": "Could not mount the device over SFTP (is sshfs installed?)",
     "pair": "Pair with device",
     "pair_requested": "Confirm the pairing request on your device",
@@ -62,6 +64,14 @@
     "hide_if_no_device": {
       "label": "Hide if unavailable",
       "description": "Hide the bar widget entirely when no device is reachable."
+    },
+    "right_click_action": {
+      "label": "Right-click action",
+      "description": "Action fired by a right click on the bar widget."
+    },
+    "middle_click_action": {
+      "label": "Middle-click action",
+      "description": "Action fired by a middle click on the bar widget."
     }
   }
 }

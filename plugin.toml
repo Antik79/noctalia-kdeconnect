@@ -9,7 +9,7 @@
 
 id           = "antik/kde-connect"
 name         = "KDE Connect"
-version      = "2.0.0"
+version      = "2.1.0"
 min_noctalia = "5.0.0"
 author       = "antik"
 license      = "GPL-2.0"
@@ -47,6 +47,36 @@ entry = "widget.luau"
   label           = "Hide if unavailable"
   description     = "Hide the bar widget entirely when no device is reachable."
   default         = false
+
+  [[widget.setting]]
+  key             = "right_click_action"
+  type            = "select"
+  label           = "Right-click action"
+  description     = "Action fired by a right click on the bar widget."
+  default         = "none"
+  options = [
+    { value = "none",      label = "None" },
+    { value = "panel",     label = "Open panel" },
+    { value = "ring",      label = "Find device (ring)" },
+    { value = "ping",      label = "Ping" },
+    { value = "clipboard", label = "Send clipboard" },
+    { value = "refresh",   label = "Refresh devices" },
+  ]
+
+  [[widget.setting]]
+  key             = "middle_click_action"
+  type            = "select"
+  label           = "Middle-click action"
+  description     = "Action fired by a middle click on the bar widget."
+  default         = "none"
+  options = [
+    { value = "none",      label = "None" },
+    { value = "panel",     label = "Open panel" },
+    { value = "ring",      label = "Find device (ring)" },
+    { value = "ping",      label = "Ping" },
+    { value = "clipboard", label = "Send clipboard" },
+    { value = "refresh",   label = "Refresh devices" },
+  ]
 
 # ── Control-center tile ───────────────────────────────────────────────────────
 
