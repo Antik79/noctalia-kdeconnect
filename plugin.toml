@@ -9,7 +9,8 @@
 
 id           = "antik/kde-connect"
 name         = "KDE Connect"
-version      = "2.1.0"
+version      = "2.1.1"
+plugin_api   = 3
 min_noctalia = "5.0.0"
 author       = "antik"
 license      = "GPL-2.0"
@@ -23,8 +24,8 @@ dependencies = ["kdeconnect (kdeconnectd running)", "systemd (busctl)", "sshfs (
 [[setting]]
 key             = "poll_interval"
 type            = "int"
-label           = "Poll interval (seconds)"
-description     = "How often the KDE Connect daemon is polled for device status."
+label_key       = "settings.poll_interval.label"
+description_key = "settings.poll_interval.description"
 default         = 5
 min             = 2
 max             = 60
@@ -44,38 +45,38 @@ entry = "widget.luau"
   [[widget.setting]]
   key             = "hide_if_no_device"
   type            = "bool"
-  label           = "Hide if unavailable"
-  description     = "Hide the bar widget entirely when no device is reachable."
+  label_key       = "settings.hide_if_no_device.label"
+  description_key = "settings.hide_if_no_device.description"
   default         = false
 
   [[widget.setting]]
   key             = "right_click_action"
   type            = "select"
-  label           = "Right-click action"
-  description     = "Action fired by a right click on the bar widget."
+  label_key       = "settings.right_click_action.label"
+  description_key = "settings.right_click_action.description"
   default         = "none"
   options = [
-    { value = "none",      label = "None" },
-    { value = "panel",     label = "Open panel" },
-    { value = "ring",      label = "Find device (ring)" },
-    { value = "ping",      label = "Ping" },
-    { value = "clipboard", label = "Send clipboard" },
-    { value = "refresh",   label = "Refresh devices" },
+    { value = "none",      label_key = "settings.click_action_options.none" },
+    { value = "panel",     label_key = "settings.click_action_options.panel" },
+    { value = "ring",      label_key = "settings.click_action_options.ring" },
+    { value = "ping",      label_key = "settings.click_action_options.ping" },
+    { value = "clipboard", label_key = "settings.click_action_options.clipboard" },
+    { value = "refresh",   label_key = "settings.click_action_options.refresh" },
   ]
 
   [[widget.setting]]
   key             = "middle_click_action"
   type            = "select"
-  label           = "Middle-click action"
-  description     = "Action fired by a middle click on the bar widget."
+  label_key       = "settings.middle_click_action.label"
+  description_key = "settings.middle_click_action.description"
   default         = "none"
   options = [
-    { value = "none",      label = "None" },
-    { value = "panel",     label = "Open panel" },
-    { value = "ring",      label = "Find device (ring)" },
-    { value = "ping",      label = "Ping" },
-    { value = "clipboard", label = "Send clipboard" },
-    { value = "refresh",   label = "Refresh devices" },
+    { value = "none",      label_key = "settings.click_action_options.none" },
+    { value = "panel",     label_key = "settings.click_action_options.panel" },
+    { value = "ring",      label_key = "settings.click_action_options.ring" },
+    { value = "ping",      label_key = "settings.click_action_options.ping" },
+    { value = "clipboard", label_key = "settings.click_action_options.clipboard" },
+    { value = "refresh",   label_key = "settings.click_action_options.refresh" },
   ]
 
 # ── Control-center tile ───────────────────────────────────────────────────────

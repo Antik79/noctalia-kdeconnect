@@ -19,7 +19,7 @@
 
 local PANEL_ID = "antik/kde-connect:panel"
 
-local hideIfNoDevice = barWidget.getConfig("hide_if_no_device") == true
+local hideIfNoDevice = noctalia.getConfig("hide_if_no_device") == true
 local snap = noctalia.state.get("kdec")
 
 -- Translation helpers with embedded English fallback (raw keys never render,
@@ -175,9 +175,9 @@ local function runAction(action)
 end
 
 function onRightClick()
-  runAction(tostring(barWidget.getConfig("right_click_action") or "none"))
+  runAction(tostring(noctalia.getConfig("right_click_action") or "none"))
 end
 
 function onMiddleClick()
-  runAction(tostring(barWidget.getConfig("middle_click_action") or "none"))
+  runAction(tostring(noctalia.getConfig("middle_click_action") or "none"))
 end

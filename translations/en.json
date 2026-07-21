@@ -72,6 +72,14 @@
     "middle_click_action": {
       "label": "Middle-click action",
       "description": "Action fired by a middle click on the bar widget."
+    },
+    "click_action_options": {
+      "none": "None",
+      "panel": "Open panel",
+      "ring": "Find device (ring)",
+      "ping": "Ping",
+      "clipboard": "Send clipboard",
+      "refresh": "Refresh devices"
     }
   }
 }

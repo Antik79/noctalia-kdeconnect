@@ -72,6 +72,14 @@
     "middle_click_action": {
       "label": "Actie bij middelklik",
       "description": "Actie die wordt uitgevoerd bij een middelklik op de balkwidget."
+    },
+    "click_action_options": {
+      "none": "Geen",
+      "panel": "Paneel openen",
+      "ring": "Apparaat zoeken (rinkelen)",
+      "ping": "Ping",
+      "clipboard": "Klembord versturen",
+      "refresh": "Apparaten vernieuwen"
     }
   }
 }
