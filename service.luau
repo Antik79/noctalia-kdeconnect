@@ -12,7 +12,8 @@
 --   }
 --
 --   Device = {
---     id, name, reachable, paired, pairRequested, verificationKey,
+--     id, name, type ("phone"|"tablet"|"desktop"|"laptop"|"tv"|""),
+--     reachable, paired, pairRequested, verificationKey,
 --     battery (-1 unknown), charging, cellType, cellStrength (-1 unknown),
 --     notifications (count),
 --   }
@@ -187,6 +188,7 @@ local function parseDevice(id: string, stdout: string)
   local d = {
     id = id,
     name = id,
+    type = "",
     reachable = false,
     paired = false,
     pairRequested = false,
@@ -208,6 +210,9 @@ local function parseDevice(id: string, stdout: string)
       local props = unwrapProps(firstReturn(body))
       if type(props.name) == "string" and props.name ~= "" then
         d.name = props.name
+      end
+      if type(props.type) == "string" then
+        d.type = props.type
       end
       d.reachable = props.isReachable == true
       d.paired = props.isPaired == true

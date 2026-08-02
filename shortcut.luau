@@ -8,19 +8,9 @@ local PANEL_ID = "antik/kde-connect:panel"
 
 local snap = noctalia.state.get("kdec")
 
--- Translation helper with embedded English fallback.
-local DEFAULTS = {
-  ["state.unavailable"] = "Unavailable",
-  ["state.no_device"] = "No device",
-}
-
-local function T(key)
-  local s = noctalia.tr(key)
-  if s == key then
-    s = DEFAULTS[key] or key
-  end
-  return s
-end
+-- Translation helper with embedded English fallback, shared via lib/i18n.luau.
+local i18n = require("./lib/i18n.luau")
+local T = i18n.T
 
 local function mainDevice()
   if type(snap) ~= "table" or type(snap.devices) ~= "table" then

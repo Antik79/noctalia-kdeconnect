@@ -15,6 +15,7 @@
   },
   "panel": {
     "title": "Verbonden apparaten",
+    "open_settings": "Plugin-instellingen",
     "battery": "Batterij",
     "network": "Netwerk",
     "signal_strength": "Signaalsterkte",
@@ -61,9 +62,17 @@
       "label": "Peilinterval (seconden)",
       "description": "Hoe vaak de KDE Connect-daemon wordt bevraagd voor apparaatstatus."
     },
+    "browse_command": {
+      "label": "Aangepast bestandsbeheer-commando (optioneel)",
+      "description": "Overschrijft xdg-open voor \"Bestanden bekijken\". Laat leeg om je systeemstandaard te gebruiken. Als je standaard bestandsbeheerder een Flatpak-app is (bijv. Flatpak Dolphin), kan deze meestal de SFTP-koppeling van kdeconnectd niet zien — stel hier een niet-Flatpak bestandsbeheerder in (bijv. nautilus, pcmanfm, thunar), of een Flatpak-override zoals: flatpak run --filesystem=host org.kde.dolphin"
+    },
     "hide_if_no_device": {
       "label": "Verbergen indien niet beschikbaar",
       "description": "Verberg de balkwidget volledig wanneer geen apparaat bereikbaar is."
+    },
+    "left_click_action": {
+      "label": "Actie bij linksklik",
+      "description": "Actie die wordt uitgevoerd bij een linksklik op de balkwidget. Standaard \"Paneel openen\" behoudt het oorspronkelijke gedrag."
     },
     "right_click_action": {
       "label": "Actie bij rechtsklik",

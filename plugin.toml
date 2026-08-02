@@ -9,8 +9,8 @@
 
 id           = "antik/kde-connect"
 name         = "KDE Connect"
-version      = "2.1.1"
-plugin_api   = 3
+version      = "2.3.0"
+plugin_api   = 22
 min_noctalia = "5.0.0"
 author       = "antik"
 license      = "GPL-2.0"
@@ -30,6 +30,13 @@ default         = 5
 min             = 2
 max             = 60
 
+[[setting]]
+key             = "browse_command"
+type            = "string"
+label_key       = "settings.browse_command.label"
+description_key = "settings.browse_command.description"
+default         = ""
+
 # ── Background service: talks to kdeconnectd, feeds the UI entries ───────────
 
 [[service]]
@@ -41,6 +48,27 @@ entry = "service.luau"
 [[widget]]
 id    = "kdeconnect"
 entry = "widget.luau"
+
+  # Upstream's built-in gesture default now maps middle-click on every bar
+  # widget to "settings-open-widget" unless a plugin overrides it — without
+  # this, our own middle_click_action setting is silently unreachable.
+  [widget.actions]
+  middle = "none"
+
+  [[widget.setting]]
+  key             = "left_click_action"
+  type            = "select"
+  label_key       = "settings.left_click_action.label"
+  description_key = "settings.left_click_action.description"
+  default         = "panel"
+  options = [
+    { value = "none",      label_key = "settings.click_action_options.none" },
+    { value = "panel",     label_key = "settings.click_action_options.panel" },
+    { value = "ring",      label_key = "settings.click_action_options.ring" },
+    { value = "ping",      label_key = "settings.click_action_options.ping" },
+    { value = "clipboard", label_key = "settings.click_action_options.clipboard" },
+    { value = "refresh",   label_key = "settings.click_action_options.refresh" },
+  ]
 
   [[widget.setting]]
   key             = "hide_if_no_device"

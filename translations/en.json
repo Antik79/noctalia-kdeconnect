@@ -15,6 +15,7 @@
   },
   "panel": {
     "title": "Connected Devices",
+    "open_settings": "Plugin settings",
     "battery": "Battery",
     "network": "Network",
     "signal_strength": "Signal Strength",
@@ -61,9 +62,17 @@
       "label": "Poll interval (seconds)",
       "description": "How often the KDE Connect daemon is polled for device status."
     },
+    "browse_command": {
+      "label": "Custom file manager command (optional)",
+      "description": "Overrides xdg-open for \"Browse files\". Leave empty to use your system default. If your default file manager is a Flatpak app (e.g. Flatpak Dolphin), it usually can't see the SFTP mount kdeconnectd creates — set a non-Flatpak file manager here (e.g. nautilus, pcmanfm, thunar), or a Flatpak override such as: flatpak run --filesystem=host org.kde.dolphin"
+    },
     "hide_if_no_device": {
       "label": "Hide if unavailable",
       "description": "Hide the bar widget entirely when no device is reachable."
+    },
+    "left_click_action": {
+      "label": "Left-click action",
+      "description": "Action fired by a left click on the bar widget. Default \"Open panel\" preserves the original behavior."
     },
     "right_click_action": {
       "label": "Right-click action",

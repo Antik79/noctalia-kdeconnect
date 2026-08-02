@@ -2,9 +2,10 @@
 -- KDE Connect [[widget]] entry — bar pill.
 --
 -- Shows a state glyph plus the main device's battery percentage.
---   left click:   toggle the device panel
+--   left click:   configurable action (setting "left_click_action", default "panel")
 --   right click:  configurable action (setting "right_click_action")
 --   middle click: configurable action (setting "middle_click_action")
+--   scroll:       cycle the main device (only with 2+ paired devices)
 --
 -- The configurable actions are: none, open panel, ring, ping, send
 -- clipboard, refresh devices. "panel" is handled directly in this VM (so it
@@ -23,34 +24,10 @@ local hideIfNoDevice = noctalia.getConfig("hide_if_no_device") == true
 local snap = noctalia.state.get("kdec")
 
 -- Translation helpers with embedded English fallback (raw keys never render,
--- even on Noctalia builds without the plugin i18n catalog).
-local DEFAULTS = {
-  ["bar.tooltip"] = "Connected Devices",
-  ["bar.notifications.one"] = "{count} notification",
-  ["bar.notifications.other"] = "{count} notifications",
-  ["state.connected"] = "Connected",
-  ["state.disconnected"] = "Disconnected",
-  ["state.unavailable"] = "Unavailable",
-  ["state.no_device"] = "No device",
-  ["state.not_paired"] = "Not paired",
-}
-
-local function T(key)
-  local s = noctalia.tr(key)
-  if s == key then
-    s = DEFAULTS[key] or key
-  end
-  return s
-end
-
-local function TP(key, count)
-  local s = noctalia.trp(key, count)
-  if s == key then
-    s = DEFAULTS[key .. (if count == 1 then ".one" else ".other")] or key
-    s = s:gsub("{count}", tostring(count))
-  end
-  return s
-end
+-- even on Noctalia builds without the plugin i18n catalog). Shared with the
+-- other entries via lib/i18n.luau (each isolated VM gets its own instance).
+local i18n = require("./lib/i18n.luau")
+local T, TP = i18n.T, i18n.TP
 
 local function mainDevice()
   if type(snap) ~= "table" or type(snap.devices) ~= "table" then
@@ -146,10 +123,6 @@ function update()
   render()
 end
 
-function onClick()
-  noctalia.togglePanel(PANEL_ID)
-end
-
 local nonce = 0
 
 local function runAction(action)
@@ -174,10 +147,36 @@ local function runAction(action)
   noctalia.state.set("kdec.action", req)
 end
 
+function onClick()
+  runAction(tostring(noctalia.getConfig("left_click_action") or "panel"))
+end
+
 function onRightClick()
   runAction(tostring(noctalia.getConfig("right_click_action") or "none"))
 end
 
 function onMiddleClick()
   runAction(tostring(noctalia.getConfig("middle_click_action") or "none"))
+end
+
+-- Reuses the same "kdec.setMain" state key the panel's device selector
+-- already drives, so scrolling and the panel dropdown stay consistent.
+function onScroll(axis, delta, isFirstStep)
+  if axis ~= "vertical" or not isFirstStep then
+    return
+  end
+  if type(snap) ~= "table" or type(snap.devices) ~= "table" or #snap.devices < 2 then
+    return
+  end
+  local ids, currentIdx = {}, 1
+  for i, d in ipairs(snap.devices) do
+    ids[i] = d.id
+    if d.id == snap.mainId then
+      currentIdx = i
+    end
+  end
+  local step = if delta > 0 then 1 else -1
+  local nextIdx = ((currentIdx - 1 + step) % #ids) + 1
+  nonce += 1
+  noctalia.state.set("kdec.setMain", { id = ids[nextIdx], nonce = nonce })
 end

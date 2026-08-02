@@ -28,63 +28,11 @@ local nonce = 0 -- monotonic counter for state-channel requests (os.clock() is C
 -- ── translations with embedded English fallback ───────────────────────────────
 -- noctalia.tr() resolves translations/<lang>.json on builds that ship the plugin
 -- i18n catalog; on builds that don't, it returns the key verbatim. Fall back to
--- these English defaults so raw keys never reach the UI.
+-- English defaults so raw keys never reach the UI. Shared with the other
+-- entries via lib/i18n.luau (each isolated VM gets its own instance).
 
-local DEFAULTS = {
-  ["panel.title"] = "Connected Devices",
-  ["panel.battery"] = "Battery",
-  ["panel.network"] = "Network",
-  ["panel.signal_strength"] = "Signal Strength",
-  ["panel.notifications"] = "Notifications",
-  ["panel.unknown"] = "Unknown",
-  ["panel.signal.0"] = "Very Weak",
-  ["panel.signal.1"] = "Weak",
-  ["panel.signal.2"] = "Fair",
-  ["panel.signal.3"] = "Good",
-  ["panel.signal.4"] = "Excellent",
-  ["panel.actions.ring"] = "Find device",
-  ["panel.actions.ping"] = "Ping",
-  ["panel.actions.clipboard"] = "Send clipboard",
-  ["panel.actions.wake"] = "Wake up",
-  ["panel.actions.browse"] = "Browse files",
-  ["panel.actions.share"] = "Send a file",
-  ["panel.share_placeholder"] = "~/path/to/file",
-  ["panel.share_not_found"] = "File not found: {path}",
-  ["panel.share_sent"] = "Sent {path}",
-  ["panel.share_sent_multi"] = "Sent {count} files",
-  ["panel.clipboard_empty"] = "Clipboard is empty",
-  ["panel.clipboard_sent"] = "Clipboard sent to device",
-  ["panel.clipboard_too_large"] = "Clipboard is too large to send",
-  ["panel.browse_failed"] = "Could not mount the device over SFTP (is sshfs installed?)",
-  ["panel.pair"] = "Pair with device",
-  ["panel.pair_requested"] = "Confirm the pairing request on your device",
-  ["panel.unpair"] = "Unpair",
-  ["panel.device_unavailable"] = "Device is currently unavailable",
-  ["errors.no_devices"] = "No device running KDE Connect found",
-  ["errors.no_devices_hint"] = "Open the KDE Connect app on your phone and make sure both devices are on the same network, then press refresh.",
-  ["errors.daemon_title"] = "kdeconnectd does not seem to be running!",
-  ["errors.daemon_desc"] = "Make sure the KDE Connect application is installed and the kdeconnectd daemon has been started.",
-  ["errors.busctl_title"] = "busctl cannot be found!",
-  ["errors.busctl_desc"] = "Make sure busctl (part of systemd) is installed on your system.",
-}
-
-local function T(key, subst)
-  local s = noctalia.tr(key, subst)
-  if s == key then
-    s = DEFAULTS[key] or key
-  end
-  -- Apply the {name} substitution unconditionally: noctalia.tr() may or may
-  -- not have already substituted depending on the runtime/catalog, and the
-  -- gsub is a no-op once the placeholder is already gone.
-  if subst ~= nil then
-    for name, value in pairs(subst) do
-      s = s:gsub("{" .. name .. "}", function()
-        return tostring(value)
-      end)
-    end
-  end
-  return s
-end
+local i18n = require("./lib/i18n.luau")
+local T, TP = i18n.T, i18n.TP
 
 -- ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -152,47 +100,21 @@ end
 
 -- ── glyph mapping (mirrors the legacy plugin) ─────────────────────────────────
 
-local function batteryGlyph(pct, charging): string
-  if pct < 0 then
-    return "battery-exclamation"
-  end
-  if charging then
-    return "battery-charging-2"
-  end
-  if pct < 5 then
-    return "battery"
-  elseif pct < 25 then
-    return "battery-1"
-  elseif pct < 50 then
-    return "battery-2"
-  elseif pct < 75 then
-    return "battery-3"
-  end
-  return "battery-4"
-end
+local glyphs = require("./lib/glyphs.luau")
+local batteryGlyph, cellTypeGlyph, cellStrengthGlyph = glyphs.batteryGlyph, glyphs.cellTypeGlyph, glyphs.cellStrengthGlyph
+local images = require("./lib/images.luau")
 
-local CELL_TYPE_GLYPHS = {
-  ["5G"] = "signal-5g",
-  ["LTE"] = "signal-4g",
-  ["HSPA"] = "signal-h",
-  ["UMTS"] = "signal-3g",
-  ["EDGE"] = "signal-e",
-  ["GPRS"] = "signal-g",
-  ["GSM"] = "signal-2g",
-  ["CDMA"] = "signal-3g",
-  ["CDMA2000"] = "signal-3g",
-  ["iDEN"] = "signal-2g",
-}
-
-local function cellTypeGlyph(cellType): string
-  return CELL_TYPE_GLYPHS[cellType] or "wave-square"
-end
-
-local function cellStrengthGlyph(strength): string
-  if strength >= 0 and strength <= 4 then
-    return `antenna-bars-{strength + 1}`
+-- Restores the device mock-up graphic the legacy v4 QML plugin had (this
+-- Luau port originally dropped it for a plain glyph). Renders a bundled
+-- silhouette image per device type when one exists, falling back to the
+-- generic glyph (ui.image has no tint prop, so this is a fixed-color asset
+-- rather than a theme-colored one — see lib/images.luau).
+local function deviceVisual(dev, size: number)
+  local path = images.deviceTypeImagePath(dev.type)
+  if path ~= nil then
+    return ui.image({ path = path, fit = "contain", width = size, height = size })
   end
-  return "antenna-bars-off"
+  return ui.glyph({ name = glyphs.deviceTypeGlyph(dev.type), size = size, color = "on_surface_variant" })
 end
 
 local function cellStrengthText(strength): string
@@ -206,7 +128,7 @@ end
 
 local function statRow(glyph, label, value)
   return ui.row({ gap = 12, align = "center" }, {
-    ui.glyph({ name = glyph, size = 26, color = "on_surface" }),
+    ui.glyph({ name = glyph, size = 24, color = "on_surface" }),
     ui.column({ gap = 2 }, {
       ui.label({ text = label, fontSize = 11, color = "on_surface_variant" }),
       ui.label({ text = value, fontSize = 14, fontWeight = "medium", color = "on_surface" }),
@@ -230,7 +152,7 @@ local function actionButton(glyph, textKey, onClick)
     glyph = glyph,
     text = T(textKey),
     fontSize = 12,
-    glyphSize = 15,
+    glyphSize = 14,
     variant = "secondary",
     contentAlign = "start",
     flexGrow = 1,
@@ -242,6 +164,7 @@ end
 
 local function pairingCard(dev)
   local children = {
+    deviceVisual(dev, 48),
     ui.label({ text = dev.name, fontSize = 18, fontWeight = "bold", color = "on_surface" }),
     ui.button({
       text = T("panel.pair"),
@@ -259,7 +182,7 @@ local function pairingCard(dev)
     }))
     if dev.verificationKey ~= "" then
       table.insert(children, ui.row({ gap = 8, align = "center", justify = "center" }, {
-        ui.glyph({ name = "key", size = 16, color = "on_surface" }),
+        ui.glyph({ name = "key", size = 24, color = "on_surface" }),
         ui.label({ text = dev.verificationKey, fontSize = 15, fontWeight = "bold", color = "primary" }),
       }))
     end
@@ -306,11 +229,14 @@ local function deviceCard(dev)
   end
 
   return ui.scroll({ flexGrow = 1, gap = 16 }, {
-    -- Device name
-    ui.label({ text = dev.name, fontSize = 18, fontWeight = "bold", color = "on_surface" }),
+    -- Device visual + name
+    ui.row({ gap = 12, align = "center" }, {
+      deviceVisual(dev, 48),
+      ui.label({ text = dev.name, fontSize = 18, fontWeight = "bold", color = "on_surface" }),
+    }),
 
     -- Stats
-    ui.column({ gap = 12, fill = "surface_variant/0.5", radius = 12, padding = 14 }, {
+    ui.column({ gap = 12, fill = "surface_variant/0.5", radius = 9, padding = 12 }, {
       statRow(batteryGlyph(dev.battery, dev.charging), T("panel.battery"), batteryValue),
       statRow(cellTypeGlyph(dev.cellType), T("panel.network"), networkValue),
       statRow(cellStrengthGlyph(dev.cellStrength), T("panel.signal_strength"), cellStrengthText(dev.cellStrength)),
@@ -337,7 +263,7 @@ local function deviceCard(dev)
 
     -- Unpair
     ui.row({ justify = "end" }, {
-      ui.button({ text = T("panel.unpair"), glyph = "unlink", fontSize = 11, glyphSize = 13, variant = "ghost", onClick = "onUnpair" }),
+      ui.button({ text = T("panel.unpair"), glyph = "unlink", fontSize = 11, glyphSize = 14, variant = "ghost", onClick = "onUnpair" }),
     }),
   })
 end
@@ -392,6 +318,7 @@ local function render()
     ui.row({ align = "center", gap = 8 }, {
       ui.glyph({ name = "device-mobile", size = 20, color = "primary" }),
       ui.label({ text = T("panel.title"), fontSize = 16, fontWeight = "bold", color = "on_surface", flexGrow = 1 }),
+      ui.button({ glyph = "settings", variant = "ghost", tooltip = T("panel.open_settings"), onClick = "onOpenSettings" }),
       ui.button({ glyph = "refresh", variant = "ghost", onClick = "onRefresh" }),
       ui.button({ glyph = "x", variant = "ghost", onClick = "onCloseClicked" }),
     }),
@@ -425,6 +352,12 @@ end
 
 function onCloseClicked()
   panel.close()
+end
+
+function onOpenSettings()
+  -- Closes this panel first (PanelManager::openPluginSettings()), then opens
+  -- this plugin's own settings page — no other plugin's.
+  noctalia.openSettings()
 end
 
 function onRefresh()
@@ -499,13 +432,20 @@ function onBrowse()
     return
   end
   local sftp = devicePath(id) .. "/sftp"
+  -- browse_command overrides xdg-open — useful when the default file manager
+  -- is a Flatpak app that can't see the SFTP mount kdeconnectd creates.
+  local browseCmd = tostring(noctalia.getConfig("browse_command") or "")
   -- Mount over SFTP (needs sshfs), then open the first exposed directory.
   noctalia.runAsync(callCmd(sftp, "org.kde.kdeconnect.device.sftp", "mountAndWait"), function(_res)
     noctalia.runAsync(callCmd(sftp, "org.kde.kdeconnect.device.sftp", "getDirectories"), function(res)
       local dirs = firstReturn(res.stdout)
       if type(dirs) == "table" then
         for path, _label in pairs(dirs) do
-          noctalia.runAsync("xdg-open " .. shellQuote(path))
+          if browseCmd ~= "" then
+            noctalia.runAsync(browseCmd .. " " .. shellQuote(path))
+          else
+            noctalia.runAsync("xdg-open " .. shellQuote(path))
+          end
           return
         end
       end
@@ -523,19 +463,30 @@ local function shareFile()
   if id == nil then
     return
   end
-  local path = noctalia.string.trim(sharePath)
-  if path == "" then
+  local paths = {}
+  for _, line in ipairs(string.split(sharePath, "\n")) do
+    local trimmed = noctalia.string.trim(line)
+    if trimmed ~= "" then
+      table.insert(paths, noctalia.expandPath(trimmed))
+    end
+  end
+  if #paths == 0 then
     return
   end
-  path = noctalia.expandPath(path)
-  if not noctalia.fileExists(path) then
-    shareFeedback = T("panel.share_not_found", { path = path })
-    render()
-    return
+  for _, path in ipairs(paths) do
+    if not noctalia.fileExists(path) then
+      shareFeedback = T("panel.share_not_found", { path = path })
+      render()
+      return
+    end
   end
-  fireAndForget(devicePath(id) .. "/share", "org.kde.kdeconnect.device.share",
-    "shareUrl", "s " .. shellQuote("file://" .. path))
-  shareFeedback = T("panel.share_sent", { path = path })
+  for _, path in ipairs(paths) do
+    fireAndForget(devicePath(id) .. "/share", "org.kde.kdeconnect.device.share",
+      "shareUrl", "s " .. shellQuote("file://" .. path))
+  end
+  shareFeedback = if #paths == 1 then T("panel.share_sent", { path = paths[1] }) else TP("panel.share_sent_multi", #paths)
+  sharePath = ""
+  shareGeneration += 1
   render()
 end
 
