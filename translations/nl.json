@@ -36,7 +36,7 @@
       "browse": "Bestanden bekijken",
       "share": "Bestand versturen"
     },
-    "share_placeholder": "~/pad/naar/bestand",
+    "share_placeholder": "~/pad/naar/bestand (één per regel — een geplakte file://-URI werkt ook)",
     "share_not_found": "Bestand niet gevonden: {path}",
     "share_sent": "{path} verstuurd",
     "share_sent_multi": "{count} bestanden verstuurd",
@@ -73,6 +73,10 @@
     "left_click_action": {
       "label": "Actie bij linksklik",
       "description": "Actie die wordt uitgevoerd bij een linksklik op de balkwidget. Standaard \"Paneel openen\" behoudt het oorspronkelijke gedrag."
+    },
+    "show_stat_labels": {
+      "label": "Tekstlabels bij statistieken tonen",
+      "description": "Toon tekstlabels (Batterij, Netwerk, Signaalsterkte, Meldingen) onder elk pictogram in de statistiekenrij van het apparaatpaneel. Standaard uit voor een compactere weergave."
     },
     "right_click_action": {
       "label": "Actie bij rechtsklik",

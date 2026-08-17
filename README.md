@@ -15,10 +15,10 @@ A Noctalia v5 (Luau) port of the legacy v4 QML plugin by WerWolv, integrating yo
 - Control-center shortcut tile showing device name, battery, and connection state
 - Device panel:
   - A device mock-up image (phone/tablet/desktop, matching the paired device's type) next to the device name
-  - Battery charge + charging state, mobile network type, signal strength, notification count
+  - Battery charge + charging state, mobile network type, signal strength, notification count shown as a compact row of icon+value chips (text labels are optional — enable the `show_stat_labels` setting to show them)
   - Ring (find my phone), ping, send clipboard text, wake up the screen
   - Send a file (type or paste a path — one per line for multiple files), browse device files over SFTP
-    - No native file picker or drag-and-drop is available to plugin panels in the current Noctalia API, so typing/pasting a path is the only option today
+    - No native file picker or drag-and-drop is available to plugin panels in the current Noctalia API, so typing/pasting a path is the only option today — but a pasted `file://` URI (e.g. from a file manager's "Copy Path" action) or a quoted path works too, not just a bare path
     - "Browse files" opens the SFTP mount with `xdg-open` by default; if your default file manager is a Flatpak app (e.g. Flatpak Dolphin) it typically can't see that mount due to sandboxing — set the `browse_command` setting to a non-Flatpak file manager or a `flatpak run --filesystem=host ...` override
   - Pair (with verification key) / unpair
   - Quick "open plugin settings" button in the panel header (shows `poll_interval`/`browse_command` only — see the bar-widget note above for click-action settings)

@@ -36,7 +36,7 @@
       "browse": "Browse files",
       "share": "Send a file"
     },
-    "share_placeholder": "~/path/to/file",
+    "share_placeholder": "~/path/to/file (one per line — a pasted file:// URI works too)",
     "share_not_found": "File not found: {path}",
     "share_sent": "Sent {path}",
     "share_sent_multi": "Sent {count} files",
@@ -73,6 +73,10 @@
     "left_click_action": {
       "label": "Left-click action",
       "description": "Action fired by a left click on the bar widget. Default \"Open panel\" preserves the original behavior."
+    },
+    "show_stat_labels": {
+      "label": "Show stat labels",
+      "description": "Show text labels (Battery, Network, Signal Strength, Notifications) under each icon in the device panel's stats row. Off by default for a more compact look."
     },
     "right_click_action": {
       "label": "Right-click action",

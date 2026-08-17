@@ -48,6 +48,28 @@ local function shellQuote(s): string
   return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
+local function decodeUriComponent(s): string
+  return (s:gsub("%%(%x%x)", function(hex)
+    return string.char(tonumber(hex, 16))
+  end))
+end
+
+-- Accepts more of what a user is likely to actually paste: a pasted
+-- file:// URI (e.g. from a file manager's "Copy Path" action) or a path
+-- wrapped in quotes (e.g. from a terminal that quotes paths with spaces).
+local function normalizeSharePath(raw): string
+  local trimmed = noctalia.string.trim(raw)
+  local quoted = trimmed:match("^'(.*)'$") or trimmed:match('^"(.*)"$')
+  if quoted ~= nil then
+    trimmed = quoted
+  end
+  local uriPath = trimmed:match("^file://(.+)$")
+  if uriPath ~= nil then
+    trimmed = decodeUriComponent(uriPath)
+  end
+  return trimmed
+end
+
 local function callCmd(objPath, itf, member, args): string
   local cmd = `{BUSCTL} call --json=short {SERVICE} {objPath} {itf} {member}`
   if args then
@@ -126,13 +148,20 @@ end
 
 -- ── UI building blocks ────────────────────────────────────────────────────────
 
-local function statRow(glyph, label, value)
-  return ui.row({ gap = 12, align = "center" }, {
-    ui.glyph({ name = glyph, size = 24, color = "on_surface" }),
-    ui.column({ gap = 2 }, {
-      ui.label({ text = label, fontSize = 11, color = "on_surface_variant" }),
-      ui.label({ text = value, fontSize = 14, fontWeight = "medium", color = "on_surface" }),
-    }),
+-- Compact stat display: icon beside its value, one per column in a single
+-- row. The text label above/below is optional (setting "show_stat_labels",
+-- default off) since the icon is meant to be self-explanatory.
+local function statChip(glyph, label, value, showLabel)
+  local iconValue = ui.row({ gap = 6, align = "center", justify = "center", flexGrow = 1 }, {
+    ui.glyph({ name = glyph, size = 20, color = "on_surface" }),
+    ui.label({ text = value, fontSize = 13, fontWeight = "medium", color = "on_surface" }),
+  })
+  if not showLabel then
+    return iconValue
+  end
+  return ui.column({ gap = 2, align = "center", flexGrow = 1 }, {
+    iconValue,
+    ui.label({ text = label, fontSize = 10, color = "on_surface_variant", textAlign = "center" }),
   })
 end
 
@@ -203,6 +232,7 @@ local function deviceCard(dev)
   local notifValue = tostring(dev.notifications)
   local batteryValue = if dev.battery >= 0 then `{dev.battery}%` else T("panel.unknown")
   local networkValue = if dev.cellType ~= "" then dev.cellType else T("panel.unknown")
+  local showStatLabels = noctalia.getConfig("show_stat_labels") == true
 
   -- Multi-file share: one path per line. In a multiline ui.input, Enter
   -- inserts a newline and onSubmit only fires on Ctrl+Enter — keep both
@@ -236,11 +266,11 @@ local function deviceCard(dev)
     }),
 
     -- Stats
-    ui.column({ gap = 12, fill = "surface_variant/0.5", radius = 9, padding = 12 }, {
-      statRow(batteryGlyph(dev.battery, dev.charging), T("panel.battery"), batteryValue),
-      statRow(cellTypeGlyph(dev.cellType), T("panel.network"), networkValue),
-      statRow(cellStrengthGlyph(dev.cellStrength), T("panel.signal_strength"), cellStrengthText(dev.cellStrength)),
-      statRow("bell", T("panel.notifications"), notifValue),
+    ui.row({ gap = 8, fill = "surface_variant/0.5", radius = 9, padding = 12 }, {
+      statChip(batteryGlyph(dev.battery, dev.charging), T("panel.battery"), batteryValue, showStatLabels),
+      statChip(cellTypeGlyph(dev.cellType), T("panel.network"), networkValue, showStatLabels),
+      statChip(cellStrengthGlyph(dev.cellStrength), T("panel.signal_strength"), cellStrengthText(dev.cellStrength), showStatLabels),
+      statChip("bell", T("panel.notifications"), notifValue, showStatLabels),
     }),
 
     -- Actions
@@ -465,7 +495,7 @@ local function shareFile()
   end
   local paths = {}
   for _, line in ipairs(string.split(sharePath, "\n")) do
-    local trimmed = noctalia.string.trim(line)
+    local trimmed = normalizeSharePath(line)
     if trimmed ~= "" then
       table.insert(paths, noctalia.expandPath(trimmed))
     end
